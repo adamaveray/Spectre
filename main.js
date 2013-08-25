@@ -1,4 +1,72 @@
 (function($, w){
+	// Based off https://gist.github.com/mikelikespie/641528
+	var rgbToLab	= (function(rgb){
+		var D65	= {
+				x:	0.9504,
+				y:	1.0000,
+				z:	1.0888
+			},
+			rgbToXYZ = [
+				[0.412453, 0.357580, 0.180423],
+				[0.212671, 0.715160, 0.072169],
+				[0.019334, 0.119193, 0.950227]
+			],
+			alpha	= 0.055;
+
+		function _XYZf(t){
+			if(t > 0.008856){
+				return Math.pow(t, 1.0/3.0);
+			} else {
+				return 7.787 * t + 16.0/116.0;
+			}
+		}
+
+
+		function _logToLinear(c){
+			if(c <= 0.04045){
+				return c / 12.92;
+			} else {
+				return Math.pow((c + alpha) / (1 + alpha), 2.4);
+			}
+		}
+
+		return function(rgb){
+			// To sRGBLinear
+			rgb	= {
+				r:	_logToLinear(rgb.r/255.0),
+				g:	_logToLinear(rgb.g/255.0),
+				b:	_logToLinear(rgb.b/255.0)
+			};
+
+			// To XYZ
+			var xyz	= {
+				x:	rgb.r * rgbToXYZ[0][0] + rgb.g * rgbToXYZ[0][1] + rgb.b * rgbToXYZ[0][2],
+				y:	rgb.r * rgbToXYZ[1][0] + rgb.g * rgbToXYZ[1][1] + rgb.b * rgbToXYZ[1][2],
+				z:	rgb.r * rgbToXYZ[2][0] + rgb.g * rgbToXYZ[2][1] + rgb.b * rgbToXYZ[2][2]
+			};
+
+			// To Lab
+			var n	= {
+					x:	xyz.x / D65.x,
+					y:	xyz.y / D65.y,
+					z:	xyz.z / D65.z
+				},
+				f	= {
+					x:	_XYZf(n.x),
+					y:	_XYZf(n.y),
+					z:	_XYZf(n.z)
+				};
+
+			return {
+				l:	n.y > 0.008856
+					? 116.8 * Math.pow(n.y, 1.0/3.0) - 16
+					: 903.3 * n.y,
+				a:	500.0 * (f.x - f.y),
+				b:	200.0 * (f.y - f.z)
+			};
+		};
+	}());
+
 	var Color	= (function(){
 		var fn	= (function(value, type){
 			var self	= {
@@ -67,7 +135,7 @@
 				},
 
 				getLab:	function(){
-					var lab	= $c.sRGB8(self.data.color.r, self.data.color.g, self.data.color.b).Lab();
+					var lab	= rgbToLab(self.getRGB());
 					return {
 						l:	lab.l,
 						a:	lab.a,
