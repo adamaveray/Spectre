@@ -1,4 +1,4 @@
-(function($, w){
+(function($, w, undefined){
 	// Based off https://gist.github.com/mikelikespie/641528
 	var rgbToLab	= (function(rgb){
 		var D65	= {
@@ -144,6 +144,33 @@
 				},
 
 
+				getShade:	function(percent, direction){
+					var rgb	= self.getRGB(),
+						amt	= Math.round(2.55 * percent),
+						normalize	= function(value){
+							if(value < 0){
+								return 0;
+							} else if(value > 255){
+								return 255;
+							}
+							return value;
+						};
+
+					if(direction === undefined){
+						direction	= self.blackIsContrast();
+					}
+					if(direction){
+						// Invert direction
+						amt	= -amt;
+					}
+
+					return new Color({
+						r:	normalize(rgb.r+amt),
+						g:	normalize(rgb.g+amt),
+						b:	normalize(rgb.b+amt)
+					}, Color.types.rgb);
+				},
+
 				blackIsContrast:	function(){
 					var rgb	= self.getRGB(),
 						yiq	= ((rgb.r*299)+(rgb.g*587)+(rgb.b*114))/1000;
@@ -186,6 +213,8 @@
 				getRGB:	self.getRGB,
 				getLab:	self.getLab,
 
+				getShade:	self.getShade,
+
 				blackIsContrast:	self.blackIsContrast,
 
 				distanceFrom:	self.distanceFrom
@@ -220,8 +249,7 @@
 		$value.text(hex);
 		$e.css('background-color', hex);
 
-		$e.addClass(color.blackIsContrast() ? 'is-light' : 'is-dark');
-		$e.removeClass(color.blackIsContrast() ? 'is-dark' : 'is-light');
+		$e.css('color', '#'+color.getShade(75).getHex());
 	};
 
 	// Load colors
@@ -276,13 +304,22 @@
 
 				} else {
 					var matches	= /^(?:rgb)?\(?(\d{1,3}), ?(\d{1,3}), ?(\d{1,3})\)?$/i.exec(val);
-					if(!matches){
-						// Unknown
-						return
+					if(matches){
+						// Valid rgb
+						color	= new Color([matches[1], matches[2], matches[3]], Color.types.rgb);
+					} else {
+						val	= val.toLowerCase();
+						if(typeof colors[val] !== 'undefined'){
+							// Valid named color
+							color	= colors[val];
+						}
 					}
+				}
 
-					// Valid rgb
-					color	= new Color([matches[1], matches[2], matches[3]], Color.types.rgb);
+
+				if(!color){
+					// No color found in input
+					return;
 				}
 
 				update(color);
