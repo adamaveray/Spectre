@@ -1,255 +1,83 @@
 (function($, w, undefined){
-	// Based off https://gist.github.com/mikelikespie/641528
-	var rgbToLab	= (function(rgb){
-		var D65	= {
-				x:	0.9504,
-				y:	1.0000,
-				z:	1.0888
-			},
-			rgbToXYZ = [
-				[0.412453, 0.357580, 0.180423],
-				[0.212671, 0.715160, 0.072169],
-				[0.019334, 0.119193, 0.950227]
-			],
-			alpha	= 0.055;
+	var $body	= $('body'),
+		outputs	= {
+			source:	$('#color-source'),
+			spec:	$('#color-spec')
+		},
+		$styleTemplate,
+		styleTemplate;
 
-		function _XYZf(t){
-			if(t > 0.008856){
-				return Math.pow(t, 1.0/3.0);
-			} else {
-				return 7.787 * t + 16.0/116.0;
-			}
+
+
+	var updateTheme	= function(color){
+		if(!$styleTemplate){
+			styleTemplate || (styleTemplate = $('#template-recolor').html());
+			$styleTemplate	= $('<style/>').appendTo($('head'));
 		}
 
-
-		function _logToLinear(c){
-			if(c <= 0.04045){
-				return c / 12.92;
-			} else {
-				return Math.pow((c + alpha) / (1 + alpha), 2.4);
+		var renderTemplate	= function(template, values){
+			var output	= template;
+			for(var name in values){
+				output	= output.replace(new RegExp('\{\{ '+name+' \}\}', 'g'), values[name])
 			}
+			return output;
+		};
+
+		var rgb	= color.getRGB(),
+			lightDiff	= color.distanceFrom(new Color('#fff', Color.types.hex)),
+			isLight	= lightDiff < 15;
+
+		$styleTemplate.html(renderTemplate(styleTemplate, {
+			color:	'#'+color.getHex(),
+			colorLight:		'#'+color.getShade(45).getHex(),
+			colorLighter:	'#'+color.getShade(55).getHex()
+		}));
+
+		if(isLight){
+			$body.addClass('darkened');
+		} else {
+			$body.removeClass('darkened');
 		}
-
-		return function(rgb){
-			// To sRGBLinear
-			rgb	= {
-				r:	_logToLinear(rgb.r/255.0),
-				g:	_logToLinear(rgb.g/255.0),
-				b:	_logToLinear(rgb.b/255.0)
-			};
-
-			// To XYZ
-			var xyz	= {
-				x:	rgb.r * rgbToXYZ[0][0] + rgb.g * rgbToXYZ[0][1] + rgb.b * rgbToXYZ[0][2],
-				y:	rgb.r * rgbToXYZ[1][0] + rgb.g * rgbToXYZ[1][1] + rgb.b * rgbToXYZ[1][2],
-				z:	rgb.r * rgbToXYZ[2][0] + rgb.g * rgbToXYZ[2][1] + rgb.b * rgbToXYZ[2][2]
-			};
-
-			// To Lab
-			var n	= {
-					x:	xyz.x / D65.x,
-					y:	xyz.y / D65.y,
-					z:	xyz.z / D65.z
-				},
-				f	= {
-					x:	_XYZf(n.x),
-					y:	_XYZf(n.y),
-					z:	_XYZf(n.z)
-				};
-
-			return {
-				l:	n.y > 0.008856
-					? 116.8 * Math.pow(n.y, 1.0/3.0) - 16
-					: 903.3 * n.y,
-				a:	500.0 * (f.x - f.y),
-				b:	200.0 * (f.y - f.z)
-			};
-		};
-	}());
-
-	var Color	= (function(){
-		var fn	= (function(value, type){
-			var self	= {
-				data:	{},
-
-
-				init:	function(){
-					switch(type){
-						case Color.types.hex:
-							if(value.substr(0, 1) === '#'){
-								value	= value.substr(1);
-							}
-
-							if(value.length === 3){
-								// Short version
-								value	= value.replace(/([a-f\d])([a-f\d])([a-f\d])/i, '$1$1$2$2$3$3');
-							}
-
-							self.data.color	= self.hexToDec(value);
-							break;
-
-						case Color.types.rgb:
-							if(value instanceof Array){
-								// Indexed values
-								value	= {
-									r:	value[0],
-									g:	value[1],
-									b:	value[2]
-								};
-							}
-
-							// Named values
-							self.data.color	= {
-								r:	parseInt(value.r, 10),
-								g:	parseInt(value.g, 10),
-								b:	parseInt(value.b, 10)
-							};
-							break;
-					}
-				},
-
-
-				toString:	function(){
-					return '('+self.data.color.r+','+self.data.color.g+','+self.data.color.b+')';
-				},
-
-
-				hexToDec:	function(hex){
-					var result = /^([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-					return result ? {
-						r: parseInt(result[1], 16),
-						g: parseInt(result[2], 16),
-						b: parseInt(result[3], 16)
-					} : null;
-				},
-				decToHex:	function(dec){
-				    var hex	= dec.toString(16);
-				    return (hex.length == 1 ? '0'+hex : hex);
-				},
-
-				getHex:	function(){
-					return self.decToHex(self.data.color.r) + self.decToHex(self.data.color.g) + self.decToHex(self.data.color.b);
-				},
-				getRGB:	function(){
-					return self.data.color;
-				},
-
-				getLab:	function(){
-					var lab	= rgbToLab(self.getRGB());
-					return {
-						l:	lab.l,
-						a:	lab.a,
-						b:	lab.b
-					};
-				},
-
-
-				getShade:	function(percent, direction){
-					var rgb	= self.getRGB(),
-						amt	= Math.round(2.55 * percent),
-						normalize	= function(value){
-							if(value < 0){
-								return 0;
-							} else if(value > 255){
-								return 255;
-							}
-							return value;
-						};
-
-					if(direction === undefined){
-						direction	= self.blackIsContrast();
-					}
-					if(direction){
-						// Invert direction
-						amt	= -amt;
-					}
-
-					return new Color({
-						r:	normalize(rgb.r+amt),
-						g:	normalize(rgb.g+amt),
-						b:	normalize(rgb.b+amt)
-					}, Color.types.rgb);
-				},
-
-				blackIsContrast:	function(){
-					var rgb	= self.getRGB(),
-						yiq	= ((rgb.r*299)+(rgb.g*587)+(rgb.b*114))/1000;
-
-					return (yiq >= 128 ? true : false);
-				},
-
-				// Based off https://github.com/iuliux/CIE94.js/blob/master/cie94.js
-				distanceFrom:	function(color){
-					var lab1	= self.getLab(),
-						lab2	= color.getLab();
-
-					var kl = 2.0, k1 = 0.048, k2 = 0.014;
-
-					// Fix for 0-brightness values
-					(lab1.b > 0 || (lab1.b = 0.0000000001));
-					(lab2.b > 0 || (lab2.b = 0.0000000001));
-
-					var dL = lab1.l - lab2.l,
-						C1 = Math.sqrt(lab1.a*lab1.a + lab1.b*lab1.b),
-						C2 = Math.sqrt(lab2.a*lab2.a + lab2.b*lab2.b),
-						dCab = C1 - C2,
-						da = lab1.a - lab2.a,
-						db = lab1.b - lab2.b,
-						dHab = Math.sqrt(da*da + db*db - dCab*dCab),
-						E = Math.sqrt(Math.pow(dL / kl, 2) +
-								Math.pow(dCab / (1 + k1 * C1), 2) +
-								Math.pow(dHab / (1 + k2 * C1), 2));
-					return E;
-				}
-			};
-
-			self.init();
-
-			// Public API
-			return {
-				toString:	self.toString,
-
-				getHex:	self.getHex,
-				getRGB:	self.getRGB,
-				getLab:	self.getLab,
-
-				getShade:	self.getShade,
-
-				blackIsContrast:	self.blackIsContrast,
-
-				distanceFrom:	self.distanceFrom
-			};
-		});
-
-		fn.types	= {
-			hex:	'hex',
-			rgb:	'rgb'
-		};
-
-		return fn;
-	}());
-
-
-	var outputs	= {
-		source:	$('#color-source'),
-		spec:	$('#color-spec')
 	};
 
+
 	var showColor	= function(color, type, name){
+		updateTheme(color);
+
+		var isSingle	= false;
+		if(type === 'single'){
+			isSingle	= true;
+			type	= 'source';
+		}
+
 		var $e	= outputs[type],
 			$name	= $e.children('.name'),
-			$value	= $e.children('.value');
+			values	= {
+				hex:	$e.find('.value-hex').children(),
+				rgb:	$e.find('.value-rgb').children()
+			};
+
 		if(name){
-			$name.text(name);
+			$name.text(name)
+				 .show();
 		} else {
 			$name.hide();
 		}
 
-		var hex	= '#'+color.getHex();
-		$value.text(hex);
-		$e.css('background-color', hex);
+		var hex	= '#'+color.getHex(),
+			rgb	= color.getRGB();
+		values.hex.text(hex);
+		values.rgb.text('rgb('+rgb.r+','+rgb.g+','+rgb.b+')');
 
+		// Update colours
+		$e.css('background-color', hex);
 		$e.css('color', '#'+color.getShade(75).getHex());
+
+		if(isSingle){
+			$e.parent().addClass('single');
+		} else {
+			$e.parent().removeClass('single');
+		}
 	};
 
 	// Load colors
@@ -281,15 +109,31 @@
 				}
 			}
 
-			showColor(color, 'source');
-			showColor(closest.color, 'spec', closest.name);
+			if(color.getHex() === closest.color.getHex()){
+				// Exact match
+				showColor(color, 'single', closest.name);
+			} else {
+				// Closest match
+				showColor(color, 'source');
+				showColor(closest.color, 'spec', closest.name);
+			}
 		};
 
-		update(new Color('#000000', Color.types.hex));
+		function randomHex(){
+			var output	= '';
+			for(var i = 0; i < 3; i++){
+				var item	= Math.floor(Math.random() * 255).toString(16);
+				output	+= (item.length === 1 ? '0' : '')+item;
+			}
+			return output;
+		}
+
+		update(new Color('#'+randomHex(), Color.types.hex));
 
 
-		var $input	= $('#color');
-		$input.keydown(function(e){
+		var $input	= $('#color-value');
+		$input.inputFocus()
+			  .keydown(function(e){
 			if(e.keyCode === 13){
 				// Enter key
 				e.preventDefault();
@@ -303,7 +147,7 @@
 					color	= new Color(val, Color.types.hex);
 
 				} else {
-					var matches	= /^(?:rgb)?\(?(\d{1,3}), ?(\d{1,3}), ?(\d{1,3})\)?$/i.exec(val);
+					var matches	= /^(?:rgba?)?\(?(\d{1,3}), ?(\d{1,3}), ?(\d{1,3})(?:, ?\d{1,3})?\)?$/i.exec(val);
 					if(matches){
 						// Valid rgb
 						color	= new Color([matches[1], matches[2], matches[3]], Color.types.rgb);
@@ -324,6 +168,8 @@
 
 				update(color);
 			}, 0);
+		}).change(function(){
+			$input.trigger('keydown');
 		});
 
 	}).fail(function(){

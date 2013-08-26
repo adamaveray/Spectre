@@ -11,35 +11,89 @@
 	<meta name="viewport" content="width=device-width,initial-scale=1" />
 
 	<link rel="stylesheet" href="css/main.css" />
+	<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Open+Sans:400italic,400" />
 
 	<script src="js/vendor/modernizr-2.6.2.min.js"></script>
 </head>
 <body>
 <!--[if lte IE 8]><p class="chromeframe">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">activate Google Chrome Frame</a> to improve your experience.</p><![endif]-->
 <header role="banner">
-	<a class="site-name" href="/">Spectre</a>
+	<a class="site-name" href="">Spectre</a>
 </header>
 
 <div id="main" role="main">
-	<input id="color" type="text" />
+	<p class="summary">Go from a boring hex color to an exciting named one!</p>
 
-	<div id="color-source" class="color-display">
-		<code class="value"></code>
+	<span class="input">
+		<label for="color-value">hex, rgb, whatever</label>
+		<input id="color-value" />
+	</span>
+
+	<div class="output">
+		<div id="color-source" class="color-display">
+			<h2 class="name"></h2>
+			<ul class="values">
+				<li class="value value-hex">
+					<code></code>
+				</li>
+				<li class="value value-rgb">
+					<code></code>
+				</li>
+			</ul>
+		</div>
+
+		<div id="color-spec" class="color-display">
+			<h2 class="name"></h2>
+			<ul class="values">
+				<li class="value value-hex">
+					<code></code>
+				</li>
+				<li class="value value-rgb">
+					<code></code>
+				</li>
+			</ul>
+		</div>
 	</div>
 
-	<div id="color-spec" class="color-display">
-		<h2 class="name"></h2>
-		<code class="value"></code>
-	</div>
+	<section id="about">
+		<h2>About</h2>
+
+		<p class="sarcasm">“Great, just what we need, another novelty single page web app.”</p>
+
+		<p>The <a href="http://www.w3.org/TR/css3-color/#svg-color">CSS color spec</a> has a bunch of named color keywords, ranging from the boring <code>red</code> and <code>blue</code> to the exotic <code>goldenrod</code> and <code>moccasin</code>. This helps you find the closest one to a hex/RGB color.</p>
+
+		<p>This was thrown together one Sunday by <a href="https://twitter.com/adamaveray">@adamaveray</a>. It's very much not perfect.</p>
+
+		<p><a href="https://github.com/adamaveray/spectre">You bet it’s on Github.</a></p>
+
+		<hr/>
+
+		<p>Keep the fun going. <a href="http://hexu.al">Check out Hexu.al</a>.</p>
+	</section>
 </div>
 
-<footer role="contentinfo">
-</footer>
+<script type="text/x-css-template" id="template-recolor">
+body,
+section a,
+.input input
+{ color: {{ color }}; }
+
+header[role="banner"],
+section h2:before,
+section h2:after
+{ background-color: {{ color }}; }
+
+.input input
+{ border-color: {{ color }}; }
+
+section code
+{ border-color: {{ colorLight }}; background-color: {{ colorLighter }}; }
+</script>
 
 <!--[if lt IE 9]><script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script><![endif]-->
 <!--[if gte IE 9]><!--><script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script><!--<![endif]-->
 <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.10.1.min.js"><\/script>')</script>
-<script src="js/main.js"></script>
+<script src="js/main.min.js"></script>
 <script>var _gaq=[['_setAccount','UA-XXXXX-X'],['_trackPageview']];(function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];g.src='//www.google-analytics.com/ga.js';s.parentNode.insertBefore(g,s)}(document,'script'));</script>
 </body>
 </html>
