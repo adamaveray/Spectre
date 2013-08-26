@@ -1,2 +1,11 @@
+$color:		#df0000;
+$column:	80px;
+
+$img:	'../img';
+
+@import "bourbon";
 @import "lib/normalize.scss";
-@import "src/layout.scss"
+@import "lib/boilerplate.scss";
+@import "lib/helpers.scss";
+@import "src/mixins.scss";
+@import "src/layout.scss";

@@ -1,0 +1,189 @@
+@mixin plain-list {
+	margin-top:		0;
+	margin-bottom:	0;
+	padding-left:	0;
+	list-style:		none;
+}
+
+@mixin pseudo-decoration($pseudo: after, $width: false, $height: false, $top: 0, $left: 50%){
+	&:#{$pseudo}{
+		content:	"";
+		display:	block;
+		position:	absolute;
+		@if $width {
+			width:	$width;
+		}
+		@if $height {
+			height:	$height;
+		}
+		top:		$top;
+		left:		$left;
+		@if ($top == 50%) and ($height){
+			margin-top:		-1*($height/2);
+		}
+		@if ($left == 50%) and ($width){
+			margin-left:	-1*($width/2);
+		}
+
+		@content;
+	}
+}
+
+@mixin prepend-text($text){
+	&:before {
+		content:	$text;
+
+		@content;
+	}
+}
+
+@mixin append-text($text){
+	&:after {
+		content:	$text;
+
+		@content;
+	}
+}
+
+
+/* Media Queries */
+@mixin media-query($media){
+	@media only screen and (unquote($media)){
+		@content;
+	}
+}
+
+@mixin media-min-width($size){
+	@include media-query("min-width: #{$size}"){
+		@content;
+	}
+}
+
+@mixin media-min-height($size){
+	@include media-query("min-height: #{$size}"){
+		@content;
+	}
+}
+
+@mixin media-max-width($size){
+	@include media-query("max-width: #{$size}"){
+		@content;
+	}
+}
+
+@mixin media-max-height($size){
+	@include media-query("max-height: #{$size}"){
+		@content;
+	}
+}
+
+@mixin media-between-width($minSize, $maxSize){
+	@include media-query("min-width: #{$minSize}) and (max-width: #{$maxSize}"){
+		@content;
+	}
+}
+
+@mixin media-between-height($minSize, $maxSize){
+	@include media-query("min-height: #{$minSize}) and (max-height: #{$maxSize}"){
+		@content;
+	}
+}
+
+@mixin media-hidpi {
+	@include media-query("-webkit-min-device-pixel-ratio: 1.5),
+	only screen and (min--moz-device-pixel-ratio: 1.5),
+	only screen and (-o-min-device-pixel-ratio: 1.5/1),
+	only screen and (min-resolution: 144dpi),
+	only screen and (min-resolution: 1.5dppx"){
+		@content;
+	}
+}
+
+
+/* SVG image */
+@mixin svg-image($path, $background-size: cover, $fallback-ext: png, $test-class: no-svg){
+	background-image:	url('#{$path}.svg');
+
+	@include background-size($background-size);
+
+	.#{$test-class} & {
+		background-image:	url('#{$path}.#{$fallback-ext}');
+	}
+}
+
+
+/* Placeholder */
+@mixin placeholder {
+	&:-moz-placeholder {
+		@content;
+	}
+	&::-webkit-input-placeholder {
+		@content;
+	}
+	&:-ms-input-placeholder {
+		@content;
+	}
+	&:input-placeholder {
+		@content;
+	}
+}
+
+
+/* Animation */
+@mixin keyframes($name) {
+	@-webkit-keyframes $name {
+		@content;
+	}
+	@-moz-keyframes $name {
+		@content;
+	}
+	@-o-keyframes $name {
+		@content;
+	}
+	@keyframes $name {
+		@content;
+	}
+}
+
+
+
+@mixin text-overflow($overflow: ellipsis, $before: false){
+	@include prefixer(text-overflow, $overflow, o ms spec);
+
+	@if $before {
+		@include prefixer(text-overflow, $overflow $before, o spec);
+	}
+}
+
+
+@mixin filter($filters){
+	@include prefixer(filter, $filters, webkit spec);
+}
+
+
+/* Removed Bourbon mixins */
+@mixin box-shadow($shadow-1,
+				  $shadow-2: false, $shadow-3: false,
+				  $shadow-4: false, $shadow-5: false,
+				  $shadow-6: false, $shadow-7: false,
+				  $shadow-8: false, $shadow-9: false){
+    $full:	compact($shadow-1, $shadow-2, $shadow-3, $shadow-4,
+					$shadow-5, $shadow-6, $shadow-7, $shadow-8, $shadow-9);
+
+	@include prefixer(box-shadow, $full, webkit spec);
+}
+
+@mixin border-radius($radii){
+	@include prefixer(border-radius, $radii, webkit spec);
+}
+
+@mixin background-size($length-1,
+					   $length-2: false, $length-3: false,
+					   $length-4: false, $length-5: false,
+					   $length-6: false, $length-7: false,
+					   $length-8: false, $length-9: false){
+	$full:	compact($length-1, $length-2, $length-3, $length-4,
+					$length-5, $length-6, $length-7, $length-8, $length-9);
+
+	@include prefixer(background-size, $full, webkit moz ms o spec);
+}
